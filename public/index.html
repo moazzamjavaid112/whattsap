@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WhatsApp Sender</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; }
+    .qr { text-align: center; margin-bottom: 20px; }
+    img { max-width: 300px; }
+    form { display: flex; flex-direction: column; gap: 10px; }
+    input, textarea, button { padding: 10px; font-size: 16px; }
+    button { background: green; color: white; border: none; cursor: pointer; }
+    button:hover { background: darkgreen; }
+    .status { margin-top: 10px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>WhatsApp Sender (Node.js + whatsapp-web.js)</h1>
+
+  <div class="qr">
+    <h3>Scan QR to login</h3>
+    <div id="qr-container">Loading QR...</div>
+  </div>
+
+  <h3>Send a Message</h3>
+  <form id="sendForm">
+    <input type="text" id="to" placeholder="Phone (e.g. 923001234567)" required>
+    <textarea id="message" placeholder="Type your message..." required></textarea>
+    <button type="submit">Send</button>
+    <div class="status" id="status"></div>
+  </form>
+
+  <script>
+    async function fetchQr() {
+      const res = await fetch('/api/qr');
+      const data = await res.json();
+      const qrDiv = document.getElementById('qr-container');
+      if (data.status === 'qr') {
+        qrDiv.innerHTML = `<img src="${data.qr}" alt="QR Code">`;
+      } else if (data.status === 'ready') {
+        qrDiv.innerHTML = `<p style="color:green;">✅ WhatsApp Client Ready!</p>`;
+      } else {
+        qrDiv.innerHTML = `<p>Waiting for QR...</p>`;
+      }
+    }
+
+    // refresh QR every 5 seconds until ready
+    setInterval(fetchQr, 5000);
+    fetchQr();
+
+    // Handle send form
+    document.getElementById('sendForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const to = document.getElementById('to').value;
+      const message = document.getElementById('message').value;
+      const statusDiv = document.getElementById('status');
+
+      statusDiv.textContent = "Sending...";
+
+      const res = await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to, message })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        statusDiv.textContent = "✅ Message sent!";
+      } else {
+        statusDiv.textContent = "❌ Error: " + data.error;
+      }
+    });
+  </script>
+</body>
+</html>
